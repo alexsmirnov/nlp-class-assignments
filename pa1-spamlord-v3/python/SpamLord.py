@@ -7,7 +7,15 @@ uname = '((?:\w|\.|_)+)'
 
 domain = '((?:\w+\.)+\w+)'
 
-patterns = [ ( '%s@%s' , re.compile(uname+'\s*(?:@|\(at\))\s*'+domain) ) ]
+patterns = [ ( '{0}@{1}' ,'e', re.compile(uname+r'\s*(?:@|\(at\)|\&\#x40\;|\(followed by.*@)\s*'+domain) ),
+             ( '{0}@{1}.{2}','e',re.compile( uname+r' WHERE (\w+) DOM (\w+)') ),
+             ( '{0}@{1}.{2}.{3}','e',re.compile( uname+r' at (\w+) dot (\w+) dot (\w+)') ),
+             ( '{1}@{0}','e',re.compile( r"obfuscate\('"+domain+"','"+uname) ),
+             ( '{0}@{1}.{2}.{3}','e',re.compile( uname+r' at (\w+);(\w+);(\w+)') ),
+             ( '{0}-{1}-{2}', 'p' , re.compile(r'(\d{3})-(\d{3})-(\d{4})') ),
+             ( '{0}-{1}-{2}', 'p' , re.compile(r'\((\d{3})\)\s*(\d{3})-(\d{4})') ),
+             ( '{0}-{1}-{2}', 'p' , re.compile(r'(\d{3})\s+(\d{3})\s+(\d{4})') )
+    ]
 
 """ 
 TODO
@@ -35,11 +43,11 @@ def process_file(name, f):
     # sys.stderr.write('[process_file]\tprocessing file: %s\n' % (path))
     res = []
     for line in f:
-      for (fmt,pat) in patterns:
+      for (fmt,typ,pat) in patterns:
         matches = pat.findall(line)
         for m in matches:
-            email = fmt % m
-            res.append((name,'e',email))
+            email = fmt.format( *m )
+            res.append((name,typ,email))
     return res
 
 
