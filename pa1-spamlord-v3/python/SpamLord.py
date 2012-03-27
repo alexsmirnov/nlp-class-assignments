@@ -3,7 +3,11 @@ import os
 import re
 import pprint
 
-my_first_pat = '(\w+)@(\w+).edu'
+uname = '((?:\w|\.|_)+)'
+
+domain = '((?:\w+\.)+\w+)'
+
+patterns = [ ( '%s@%s' , re.compile(uname+'\s*(?:@|\(at\))\s*'+domain) ) ]
 
 """ 
 TODO
@@ -31,11 +35,13 @@ def process_file(name, f):
     # sys.stderr.write('[process_file]\tprocessing file: %s\n' % (path))
     res = []
     for line in f:
-        matches = re.findall(my_first_pat,line)
+      for (fmt,pat) in patterns:
+        matches = pat.findall(line)
         for m in matches:
-            email = '%s@%s.edu' % m
+            email = fmt % m
             res.append((name,'e',email))
     return res
+
 
 """
 You should not need to edit this function, nor should you alter
