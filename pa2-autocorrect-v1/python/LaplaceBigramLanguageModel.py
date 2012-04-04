@@ -5,7 +5,7 @@ class LaplaceBigramLanguageModel:
 
   def __init__(self, corpus):
     """Initialize your data structures in the constructor."""
-    self.bigramms = collections.Counter()
+    self.bigrams = collections.Counter()
     self.words = collections.Counter()
     self.total = 0
     self.train(corpus)
@@ -16,13 +16,14 @@ class LaplaceBigramLanguageModel:
     """  
     for sentence in corpus.corpus:
       data = sentence.data
-      for datum1,datum2 in zip(data,data[1:]):  
-        token1 = datum1.word
+      token1 = data[0].word
+      for datum2 in data[1:] :  
         token2 = datum2.word
-        bg = BiGramm(token1,token2)
+        bg = BiGram(token1,token2)
         self.words[token1] += 1
-        self.bigramms[bg] += 1
+        self.bigrams[bg] += 1
         self.total += 1
+        token1 = token2
  
 
   def score(self, sentence):
@@ -31,14 +32,14 @@ class LaplaceBigramLanguageModel:
     """
     score = 0.0
     for word1,word2 in zip(sentence,sentence[1:]):
-      bg = BiGramm(word1,word2)
-      count = self.bigramms[bg]
+      bg = BiGram(word1,word2)
+      count = self.bigrams[bg]
       score += math.log(count+1)
-      score -= math.log(self.total) 
+      score -= math.log(self.total+len(self.bigrams)) 
     return score
 
 
-class BiGramm:
+class BiGram:
   def __init__(self,first,second):
     self.first = first
     self.second = second
