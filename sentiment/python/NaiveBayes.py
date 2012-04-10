@@ -16,6 +16,7 @@ import sys
 import getopt
 import os
 import math
+import collections
 
 class NaiveBayes:
   class TrainSplit:
@@ -33,12 +34,35 @@ class NaiveBayes:
       self.klass = ''
       self.words = []
 
+  class Category:
+    """ represents words count and total number of words in category"""
+    def __init__(self):
+      self.counts = collections.Counter()
+      self.total = 0
+      self.occurences = 0
+
+    def addExample(self,words):
+      for w in words:
+        self.counts[w] += 1
+        self.total += 1
+      self.occurences += 1
+
+    def likelyhood(self,words):
+      score = 0.0
+      divider = math.log(self.total + len(self.counts))
+      for w in words:
+        score += math.log(self.counts[w]+1)
+        score -= divider
+      return score * self.occurences
+
 
   def __init__(self):
     """NaiveBayes initialization"""
     self.FILTER_STOP_WORDS = False
     self.stopList = set(self.readFile('../data/english.stop'))
     self.numFolds = 10
+    self.pos = self.Category()
+    self.neg = self.Category()
 
   #############################################################################
   # TODO TODO TODO TODO TODO 
@@ -47,8 +71,12 @@ class NaiveBayes:
     """ TODO
       'words' is a list of words to classify. Return 'pos' or 'neg' classification.
     """
-    return 'pos'
-  
+    negScore = self.neg.likelyhood(words)
+    posScore = self.pos.likelyhood(words)
+    if posScore > negScore :
+      return 'pos'
+    else:
+      return 'neg'
 
   def addExample(self, klass, words):
     """
@@ -59,7 +87,10 @@ class NaiveBayes:
      * in the NaiveBayes class.
      * Returns nothing
     """
-    pass
+    if 'pos' == klass :
+      self.pos.addExample(words)
+    elif 'neg' == klass :
+      self.neg.addExample(words)
       
 
   # TODO TODO TODO TODO TODO 
