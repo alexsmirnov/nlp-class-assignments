@@ -42,16 +42,19 @@ class NaiveBayes:
       self.occurences = 0
 
     def addExample(self,words):
+      docwords = set()
       for w in words:
-        self.counts[w] += 1
-        self.total += 1
+        docwords.add(w)
+      self.total += len(docwords)
+      self.counts.update(docwords)
       self.occurences += 1
 
     def likelyhood(self,words):
       score = 0.0
-      divider = math.log(self.total + len(self.counts))
+      alpha = 0.5
+      divider = math.log(self.total + alpha * len(self.counts))
       for w in words:
-        score += math.log(self.counts[w]+1)
+        score += math.log(self.counts[w]+alpha)
         score -= divider
       return score * self.occurences
 
