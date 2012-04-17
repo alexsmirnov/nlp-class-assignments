@@ -1,0 +1,30 @@
+<project default="compile">
+
+    <target name="clean">
+      <delete dir="classes"/>
+    </target>
+
+    <target name="compile">
+      <mkdir dir="classes"/>
+      <javac srcdir="." destdir="classes"  includeantruntime="false" debug="true" target="1.6">
+      </javac>
+    </target>
+    
+    <target name="run" depends="compile">
+      <!-- Increase the maxmemory property if Java runs out of heap space. -->
+      <java classname="NER" classpath="classes" fork="true" maxmemory="2G">
+        <arg value="../data/train"/>
+        <arg value="../data/dev"/>
+        <arg value="-print"/> <!-- Comment out this line to disable printing -->
+      </java>
+    </target>
+    
+    <target name="submit" depends="compile">
+      <java classname="Submit" fork="false">
+        <classpath>
+          <pathelement path="classes"/>
+        </classpath>
+      </java>
+    </target>
+
+</project>
