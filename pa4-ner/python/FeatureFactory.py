@@ -1,6 +1,7 @@
-import json, sys
+import json, sys, re
 import base64
 from Datum import Datum
+from nltk.corpus import names
 
 class FeatureFactory:
     """
@@ -9,7 +10,9 @@ class FeatureFactory:
     features, you may not need to intialize anything.
     """
     def __init__(self):
-        pass
+      self.mister = frozenset(['mr',"ms","ms.","mss","mr.","dr","dr.","de","fon"])
+      self.names = frozenset(names.words())
+      self.midname = re.compile("^[A-Z]\.$")
 
 
     """
@@ -22,6 +25,8 @@ class FeatureFactory:
     def computeFeatures(self, words, previousLabel, position):
         features = []
         currentWord = words[position]
+        currentCapitalized = currentWord[0].isupper() and currentWord[1:].islower()
+        previousWord = words[position-1] or "=NOT-A-WORD="
 
         """ Baseline Features """
         features.append("word=" + currentWord)
@@ -36,7 +41,30 @@ class FeatureFactory:
 
 
 	""" TODO: Add your features here """
-
+        if previousWord.lower() in self.mister:
+            features.append("mister="+previousWord.lower())
+        if self.midname.match(previousWord) and currentCapitalized :
+            features.append("afterMidName")
+        if self.midname.match(currentWord) and previousLabel == "PERSON" :
+            features.append("MidName")
+        if previousWord.lower() == 'the' :
+            features.append("afterArticle")
+        if previousWord in self.names and currentCapitalized :
+            features.append("afterGazeteerName")
+        if currentWord in self.names :
+            features.append("gazeteerWord")
+        if previousLabel == "PERSON" and currentCapitalized :
+            features.append("afterperson")
+        if currentWord.endswith("'s"):
+            features.append("owns")
+            if currentWord[:-2] in self.names :
+              features.append("gazeteerWord")
+        if currentWord.startswith("O'"):
+            features.append("ireland")
+        if currentWord.startswith("D'"):
+            features.append("french")
+        if currentCapitalized:
+            features.append("capitalized")
         return features
 
     """ Do not modify this method """
