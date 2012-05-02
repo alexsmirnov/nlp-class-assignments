@@ -172,16 +172,16 @@
 1	Misc	hardest
 
 # Plural nouns.
-1	Misc	coconuts
-1	Misc	halves
-1	Misc	snows
-1	Misc	mountains
-1	Misc	areas
-1	Misc	strangers
-1	Misc	inches
-1	Misc	snakes
-1	Misc	ants
-1	Misc	nights
+1	NounP	coconuts
+1	NounP	halves
+1	NounP	snows
+1	NounP	mountains
+1	NounP	areas
+1	NounP	strangers
+1	NounP	inches
+1	NounP	snakes
+1	NounP	ants
+1	NounP	nights
 
 # More proper nouns, not people.
 
@@ -285,25 +285,25 @@
 1	VerbPP	known
 
 # More third person singular verbs.
-1	Misc	speaks
-1	Misc	grows
-1	Misc	goes
-1	Misc	migrates
-1	Misc	suggests
-1	Misc	knows
+1	VerbIT	speaks
+1	VerbIT	grows
+1	VerbIT	goes
+1	VerbIT	migrates
+1	VerbIT	suggests
+1	VerbIT	knows
 
 # Verbs (present, plural, third person).
-1	Misc	have
-1	Misc	speak
-1	Misc	cover
-1	Misc	are
-1	Misc	ride
-1	Misc	drink
-1	Misc	grow
-1	Misc	carry
-1	Misc	suggest
-1	Misc	migrate
-1	Misc	know
+1	VerbPlural	have
+1	VerbPlural	speak
+1	VerbPlural	cover
+1	VerbPlural	are
+1	VerbPlural	ride
+1	VerbPlural	drink
+1	VerbPlural	grow
+1	VerbPlural	carry
+1	VerbPlural	suggest
+1	VerbPlural	migrate
+1	VerbPlural	know
 
 # Wh-determiners.
 1	Misc	that
@@ -311,18 +311,18 @@
 1	Misc	which
 
 # Wh-pronouns.
-1	Misc	what
-1	Misc	who
+1	WH	what
+1	WH	who
 
 # Wh possessive pronoun.
-1	Misc	whose
+1	WH	whose
 
 # Wh-adverbs
-1	Misc	how
-1	Misc	when
-1	Misc	where
-1	Misc	why
+1	WH	how
+1	WH	when
+1	WH	where
+1	WH	why
 
 
 # Possessive marker.
-1	Misc	's
+1	Posses	's

@@ -2,21 +2,32 @@
 
 # These two rules are required; choose their weights carefully!
 99	START	S1
-30	START	SQ
-0	START	S2
+1	START	S2
 
 # This is a very, very, very simple grammar to get you started.
 
-10	S1	NP VP .
-1	S1	NP VP !
+10	S1	DS
+10	S1	SQ
+10	S1	WSQ
+10	WSQ	WH SQ
+10	SQ	QVB DS ?
+10	SQ	QVBB NP ?
 
-10	SQ	do NP VP ?
-10	SQ	dooes NP VP ?
-10	SQ	are NP VP ?
-10	SQ	is NP VP ?
+10	DS	NP VP .
+1	DS	NP VP !
 
+
+1	QVB	DO
+1	QVBB	is
+1	QVBB	are
+
+1	VP	Verb
+1	VP	VerbIT
 1	VP	VerbT NP
+1	VP	VerbP NP
+1	VP	Verb NP
 1	VP	VerbT AJTP
+1	VP	VerbIT AJTP
 
 20	NP	Det Nbar
 10	NP	Nbar
@@ -26,6 +37,7 @@
 1	AJTP	JJ
 
 20	Nbar	Noun
+10	Nbar	NounP
 10	Nbar	VBG
 1	Nbar	Nbar PP
 
