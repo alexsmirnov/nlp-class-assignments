@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# You may find this shell script helpful.
+
+java -server -mx500m -cp classes \
+  nlpclass.assignments.Submit \
+  $@

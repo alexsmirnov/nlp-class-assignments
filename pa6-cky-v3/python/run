@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# You may find this shell script helpful.
+
+DATA=masc
+DATA=miniTest
+
+# --parser PCFGParser \
+
+python PCFGParserTester.py \
+  --path ../data \
+  --parser BaselineParser \
+  --data $DATA \
+  $@

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# You may find this shell script helpful.
+
+python submit.py \
+  $@

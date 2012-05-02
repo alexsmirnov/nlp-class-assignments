@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# You may find this shell script helpful.
+
+DATA=miniTest
+DATA=masc
+
+
+# --parser nlpclass.assignments.PCFGParserTester\$PCFGParser \
+
+java -server -mx500m -cp classes \
+  nlpclass.assignments.PCFGParserTester \
+  --parser nlpclass.assignments.PCFGParserTester\$BaselineParser \
+  --path ../data \
+  --data $DATA \
+  $@
