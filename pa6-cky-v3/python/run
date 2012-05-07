@@ -2,13 +2,13 @@
 
 # You may find this shell script helpful.
 
-DATA=masc
+#DATA=masc
 DATA=miniTest
 
 # --parser PCFGParser \
 
 python PCFGParserTester.py \
   --path ../data \
-  --parser BaselineParser \
+ --parser PCFGParser \
   --data $DATA \
   $@

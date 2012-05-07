@@ -1,6 +1,7 @@
 import collections
 import copy
 import optparse
+import math
 
 from ling.Tree import Tree
 import ling.Trees as Trees
@@ -30,7 +31,12 @@ class PCFGParser(Parser):
         #       most binary
 
         self.lexicon = Lexicon(train_trees)
-        self.grammar = Grammar(train_trees)
+        self.tags = self.lexicon.get_all_tags()
+        binary_trees = map(TreeAnnotations.annotate_tree,train_trees)
+        for binary_tree in binary_trees:
+            print "Binary Tree:\n%s" % Trees.PennTreeRenderer.render(binary_tree)
+        self.grammar = Grammar(binary_trees)
+        print "Grammar:\n%s" % str(self.grammar)
 
 
     def get_best_parse(self, sentence):
@@ -39,9 +45,82 @@ class PCFGParser(Parser):
         'sentence' is a list of strings (words) that form a sentence.
         """
         # TODO: implement this method
+        current_row = []
+        # Fill bottom diagonal from Lexicon:
+        for word in sentence:
+            cell = {}
+            for tag in self.tags:
+              cell[tag] = WordProd(tag,self.lexicon.score_tagging(word,tag),word)
+            self.apply_unary(cell)
+            current_row.append(cell)
 
-        return None
+        back_row = current_row
+        current_row = []
+        return Tree("ROOT")
 
+    def apply_unary(self,cell):
+        added = True
+        while added:
+          added = False
+          for label in cell.keys():
+            prod = cell[label]
+            for rule in self.grammar.get_unary_rules_by_child(label):
+              ruleProd = UnaryProd(rule.parent,rule.score,prod)
+              if rule.parent in cell:
+                existed_prod = cell[rule.parent]
+                if ruleProd.probability() > existed_prod.probability():
+                  cell[rule.parent] = ruleProd
+                  added = True
+
+              else:
+                  cell[rule.parent] = ruleProd
+                  added = True
+
+
+class Prod:
+    def tree(self):
+      pass
+
+    def probability(self):
+      pass
+
+class UnaryProd(Prod):
+    def __init__(self,label,prob,parent):
+        self.label = label
+        self.prob = math.log(prob) + parent.probability()
+        self.parent = parent
+
+    def __str__(self):
+      return "%s->[%s]" % self.label, str(self.parent)
+
+    def probability(self):
+      return self.prob
+
+class BinaryProd(Prod):
+    def __init__(self,label,prob,left,right):
+        self.label = label
+        self.prob = math.log(prob)+left.probability()+right.probability()
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+      return "%s->[%s:%s]" % self.label, str(self.left), str(self.right)
+
+    def probability(self):
+      return self.prob
+
+class WordProd(Prod):
+    def __init__(self,label,prob,word):
+        self.label = label
+        self.prob = math.log(prob)
+        self.word = word
+
+
+    def __str__(self):
+      return "%s:[%s]/%f" % self.label, self.word, self.prob
+
+    def probability(self):
+      return self.prob
 
 class BaselineParser(Parser):
 
@@ -160,6 +239,8 @@ class TreeAnnotations:
             return Tree(label)
         if len(tree.children) == 1:
             return Tree(label, [TreeAnnotations.binarize_tree(tree.children[0])])
+        if len(tree.children) == 2:
+            return Tree(label, [TreeAnnotations.binarize_tree(tree.children[0]),TreeAnnotations.binarize_tree(tree.children[1])])
 
         intermediate_label = "@%s->" % label
         intermediate_tree = TreeAnnotations.binarize_tree_helper(
@@ -172,11 +253,15 @@ class TreeAnnotations:
         left_tree = tree.children[num_children_generated]
         children = []
         children.append(TreeAnnotations.binarize_tree(left_tree))
-        if num_children_generated < len(tree.children) - 1:
+        if num_children_generated < len(tree.children) - 2:
             right_tree = TreeAnnotations.binarize_tree_helper(
                     tree, num_children_generated + 1,
                     intermediate_label + "_" + left_tree.label)
             children.append(right_tree)
+        else:
+            right_tree = left_tree = tree.children[num_children_generated+1]
+            children.append(TreeAnnotations.binarize_tree(right_tree))
+
         return Tree(intermediate_label, children)
 
 
@@ -305,7 +390,7 @@ class Grammar:
             self.add_binary(binary_rule)
 
 
-    def __unicode__(self):
+    def __str__(self):
         rule_strings = []
         for left_child in self.binary_rules_by_left_child:
             for binary_rule in self.get_binary_rules_by_left_child(
