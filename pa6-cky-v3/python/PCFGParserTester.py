@@ -36,8 +36,6 @@ class PCFGParser(Parser):
         for binary_tree in binary_trees:
             print "Binary Tree:\n%s" % Trees.PennTreeRenderer.render(binary_tree)
         self.grammar = Grammar(binary_trees)
-        print "Grammar:\n%s" % str(self.grammar)
-
 
     def get_best_parse(self, sentence):
         """
@@ -45,18 +43,38 @@ class PCFGParser(Parser):
         'sentence' is a list of strings (words) that form a sentence.
         """
         # TODO: implement this method
-        current_row = []
+        words = len(sentence)
+        products = [[ {} for i in range(words+1) ] for j in  range(words+1) ]
         # Fill bottom diagonal from Lexicon:
-        for word in sentence:
-            cell = {}
+        for i in range(words):
+            word = sentence[i]
+            cell = products[i][i+1]
             for tag in self.tags:
-              cell[tag] = WordProd(tag,self.lexicon.score_tagging(word,tag),word)
+              score = self.lexicon.score_tagging(word,tag)
+              if score > 0.0 :
+                 cell[tag] = WordProd(tag,score,word)
             self.apply_unary(cell)
-            current_row.append(cell)
 
-        back_row = current_row
-        current_row = []
-        return Tree("ROOT")
+        for span in range(2,words+1):
+          for begin in range(words-span+1):
+            end = begin + span 
+            for split in range( begin+1, end ):
+              cell = products[begin][end]
+              left = products[begin][split]
+              right = products[split][end]
+              for lr in left.keys():
+                 rules = self.grammar.get_binary_rules_by_left_child(lr)
+                 for rule in rules:
+                   rule_name = rule.parent
+                   if rule.right_child in right:
+                      prod = BinaryProd(rule_name,rule.score,left[lr],right[rule.right_child])
+                      if rule_name in cell:
+                        if prod.probability() > cell[rule_name].probability():
+                          cell[rule_name] = prod
+                      else:
+                          cell[rule_name] = prod
+              self.apply_unary(cell)
+        return TreeAnnotations.unannotate_tree(products[0][words]["ROOT"].tree())
 
     def apply_unary(self,cell):
         added = True
@@ -66,7 +84,7 @@ class PCFGParser(Parser):
             prod = cell[label]
             for rule in self.grammar.get_unary_rules_by_child(label):
               ruleProd = UnaryProd(rule.parent,rule.score,prod)
-              if rule.parent in cell:
+              if rule.parent in cell.keys():
                 existed_prod = cell[rule.parent]
                 if ruleProd.probability() > existed_prod.probability():
                   cell[rule.parent] = ruleProd
@@ -96,6 +114,9 @@ class UnaryProd(Prod):
     def probability(self):
       return self.prob
 
+    def tree(self):
+      return Tree(self.label,[self.parent.tree()])
+
 class BinaryProd(Prod):
     def __init__(self,label,prob,left,right):
         self.label = label
@@ -109,6 +130,9 @@ class BinaryProd(Prod):
     def probability(self):
       return self.prob
 
+    def tree(self):
+      return Tree(self.label,[self.left.tree(),self.right.tree()])
+
 class WordProd(Prod):
     def __init__(self,label,prob,word):
         self.label = label
@@ -121,6 +145,10 @@ class WordProd(Prod):
 
     def probability(self):
       return self.prob
+
+    def tree(self):
+      return Tree(self.label,[Tree(self.word)])
+
 
 class BaselineParser(Parser):
 
@@ -230,17 +258,18 @@ class TreeAnnotations:
         # mark nodes with the label of their parent nodes, giving a second
         # order vertical markov process
 
-        return TreeAnnotations.binarize_tree(unannotated_tree)
+        return TreeAnnotations.binarize_tree(unannotated_tree,"")
 
     @classmethod
-    def binarize_tree(cls, tree):
-        label = tree.label
+    def binarize_tree(cls, tree,suffix):
+        label = tree.label + suffix
+        nextsuffix = "^%s" % tree.label
         if tree.is_leaf():
-            return Tree(label)
+            return Tree(tree.label)
         if len(tree.children) == 1:
-            return Tree(label, [TreeAnnotations.binarize_tree(tree.children[0])])
+            return Tree(label, [TreeAnnotations.binarize_tree(tree.children[0],nextsuffix)])
         if len(tree.children) == 2:
-            return Tree(label, [TreeAnnotations.binarize_tree(tree.children[0]),TreeAnnotations.binarize_tree(tree.children[1])])
+            return Tree(label, [TreeAnnotations.binarize_tree(tree.children[0],nextsuffix),TreeAnnotations.binarize_tree(tree.children[1],nextsuffix)])
 
         intermediate_label = "@%s->" % label
         intermediate_tree = TreeAnnotations.binarize_tree_helper(
@@ -252,7 +281,8 @@ class TreeAnnotations:
             intermediate_label):
         left_tree = tree.children[num_children_generated]
         children = []
-        children.append(TreeAnnotations.binarize_tree(left_tree))
+        nextsuffix = "^%s" % tree.label
+        children.append(TreeAnnotations.binarize_tree(left_tree,nextsuffix))
         if num_children_generated < len(tree.children) - 2:
             right_tree = TreeAnnotations.binarize_tree_helper(
                     tree, num_children_generated + 1,
@@ -260,7 +290,7 @@ class TreeAnnotations:
             children.append(right_tree)
         else:
             right_tree = left_tree = tree.children[num_children_generated+1]
-            children.append(TreeAnnotations.binarize_tree(right_tree))
+            children.append(TreeAnnotations.binarize_tree(right_tree,nextsuffix))
 
         return Tree(intermediate_label, children)
 

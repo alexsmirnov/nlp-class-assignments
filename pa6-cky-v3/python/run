@@ -2,8 +2,8 @@
 
 # You may find this shell script helpful.
 
-#DATA=masc
-DATA=miniTest
+DATA=masc
+#DATA=miniTest
 
 # --parser PCFGParser \
 
