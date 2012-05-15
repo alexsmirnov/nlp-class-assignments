@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import json
+import collections
 import math
 import os
 import re
@@ -127,11 +128,12 @@ class IRSystem:
 
         self.titles = []
         self.docs = []
+        self.doc_words = []
         numdocs = len(docs)
         for d in range(numdocs):
             self.titles.append(titles[ordering[d]])
             self.docs.append(docs[ordering[d]])
-
+            self.doc_words.append(collections.Counter(docs[ordering[d]]))
         # Get the vocabulary.
         self.vocab = [xx for xx in self.get_uniq_words()]
 
@@ -147,12 +149,22 @@ class IRSystem:
         #       word-document pair, but rather just for those pairs where a
         #       word actually occurs in the document.
         print "Calculating tf-idf..."
-        self.tfidf = {}
+        self.tfidf = collections.defaultdict(lambda: collections.defaultdict(lambda: 0.0) )
+        self.idf = {}
+        self.doclen =  collections.defaultdict(lambda: 0.0)
         for word in self.vocab:
-            for d in range(len(self.docs)):
-                if word not in self.tfidf:
-                    self.tfidf[word] = {}
-                self.tfidf[word][d] = 0.0
+          df = 0.0;
+          for doc in self.doc_words:
+            if word in doc:
+              df += 1.0
+
+          idf = math.log10(len(self.docs)/df )
+          self.idf[word] = idf
+          for i, doc in enumerate(self.doc_words):
+            if word in doc:
+              tfidf =  ( 1.0 + math.log10(doc[word]) ) * idf
+              self.tfidf[word][i] = tfidf
+              self.doclen[i] += tfidf * tfidf
 
         # ------------------------------------------------------------------
 
@@ -162,6 +174,8 @@ class IRSystem:
         # TODO: Return the tf-idf weigthing for the given word (string) and
         #       document index.
         tfidf = 0.0
+        if document in self.tfidf[word]:
+           tfidf = self.tfidf[word][document]
         # ------------------------------------------------------------------
         return tfidf
 
@@ -189,11 +203,14 @@ class IRSystem:
         #         * self.docs = List of documents
         #         * self.titles = List of titles
 
-        inv_index = {}
+        inv_index = collections.defaultdict(lambda: [])
         for word in self.vocab:
-            inv_index[word] = []
+          for i, doc in enumerate(self.doc_words):
+            if word in doc:
+              inv_index[word].append( (i,doc[word]) )
 
         self.inv_index = inv_index
+        print "Indexing done"
 
         # ------------------------------------------------------------------
 
@@ -205,11 +222,13 @@ class IRSystem:
         """
         # ------------------------------------------------------------------
         # TODO: return the list of postings for a word.
-        posting = []
 
-        return posting
+        return  map(lambda t:  t[0] ,self.inv_index[word])
         # ------------------------------------------------------------------
 
+
+    def get_posting_set(self,word):
+        return set(self.get_posting(word))
 
     def get_posting_unstemmed(self, word):
         """
@@ -232,9 +251,10 @@ class IRSystem:
         # TODO: Implement Boolean retrieval. You will want to use your
         #       inverted index that you created in index().
         # Right now this just returns all the possible documents!
-        docs = []
-        for d in range(len(self.docs)):
-            docs.append(d)
+        docs =  self.get_posting_set(query[0])
+
+        for word in query[1:]:
+          docs = docs & self.get_posting_set(word)
 
         # ------------------------------------------------------------------
 
@@ -246,29 +266,32 @@ class IRSystem:
         Given a query (a list of words), return a rank-ordered list of
         documents (by ID) and score for the query.
         """
-        scores = [0.0 for xx in range(len(self.docs))]
         # ------------------------------------------------------------------
         # TODO: Implement cosine similarity between a document and a list of
         #       query words.
 
         # Right now, this code simply gets the score by taking the Jaccard
         # similarity between the query and every document.
-        words_in_query = set()
-        for word in query:
-            words_in_query.add(word)
-
-        for d, doc in enumerate(self.docs):
-            words_in_doc = set(doc)
-            scores[d] = len(words_in_query.intersection(words_in_doc)) \
-                    / float(len(words_in_query.union(words_in_doc)))
-
+        words_in_query = collections.Counter(query)
+        query_tf = dict( map(lambda t: ( t[0],1.0 + math.log10(t[1])),words_in_query.items()) )
+        result_docs = set()
+        query_len = 0.0
+        for word, tf in query_tf.items():
+            result_docs = result_docs | self.get_posting_set(word)
+            query_len += tf * tf
+        query_len = math.sqrt(query_len)
         # ------------------------------------------------------------------
+        scores = []
+        for doc in result_docs:
+            dot_product = 0.0
+            for word, tf in query_tf.items():
+                 tfidf = self.get_tfidf(word,doc)
+                 dot_product += tf*tfidf
+            if dot_product > 0 :
+                score = dot_product /  math.sqrt(self.doclen[doc])
+                scores.append( (doc,score) )
 
-        ranking = [idx for idx, sim in sorted(enumerate(scores),
-            key = lambda xx : xx[1], reverse = True)]
-        results = []
-        for i in range(10):
-            results.append((ranking[i], scores[ranking[i]]))
+        results = sorted(scores, key = lambda s: s[1], reverse = True)
         return results
 
 
@@ -366,6 +389,8 @@ def run_tests(irsys):
                     if top_rank[1] >= float(soln[i][1]) - epsilon and \
                             top_rank[1] <= float(soln[i][1]) + epsilon:
                         num_correct += 1
+                else:
+                  print "incorrect cosine result for query '%s', got %d expected %d" % (query,  top_rank[0] , soln[i][0] )
 
         feedback = "%d/%d Correct. Accuracy: %f" % \
                 (num_correct, num_total, float(num_correct)/num_total)
